@@ -1,0 +1,19 @@
+# backup files
+*~
+# OS environment files
+.directory
+thumbs.db
+# project dirs and files
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+# Eclipse
+.classpath
+.project
+.settings/
+.metadata/
+/.recommenders/
+
+
