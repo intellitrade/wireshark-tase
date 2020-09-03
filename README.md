@@ -14,3 +14,5 @@ enable the "Heuristic Detection" option in the protocol preferences.
 To dissect all packets with a predefined port, set the Ports option in the protocol
 preferences. Multiple comma-separated ports can be specified, as well as port ranges.
 
+# License
+This project is provided under the terms of the GPL 3 license.
