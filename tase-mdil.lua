@@ -84,6 +84,8 @@ local pf_packet_length      = ProtoField.uint16("mdil.packet.length", "Packet Le
 local pf_message_count      = ProtoField.uint8("mdil.message_count", "Message Count")
 local pf_feed_type          = ProtoField.new("Feed Type", "mdil.feed_type", ftypes.CHAR)
 local pf_seq                = ProtoField.uint32("mdil.sequence_number", "First MDIL Sequence Number")
+local pf_next_seq           = ProtoField.uint32("mdil.next_sequence_number", "Next MDIL Sequence Number")
+local pf_heartbeat          = ProtoField.bool("mdil.heartbeat", "Heartbeat Packet")
 
 local pf_message            = ProtoField.bytes("mdil.message", "Message")
 local pf_message_index      = ProtoField.uint16("mdil.message.index", "Index")
@@ -94,7 +96,8 @@ local pf_message_body       = ProtoField.string("mdil.message.body", "Payload")
 local pf_message_gap_fill   = ProtoField.bool("mdil.message.gap_fill", "Gap Fill (Empty) Message")
 
 mdil.fields = { 
-    pf_packet_length, pf_message_count, pf_feed_type, pf_seq,
+    pf_packet_length, pf_message_count, pf_feed_type,
+    pf_seq, pf_next_seq, pf_heartbeat,
     pf_message, pf_message_index, pf_message_length,
     pf_message_seq, pf_message_feed_seq, pf_message_body, pf_message_gap_fill
 }
@@ -158,15 +161,30 @@ mdil.dissector = function(tvb, pinfo, root)
     -- add a subtree encompassing the entire packet data
     local tree = root:add(mdil, tvb:range(0, len))
 
-    -- add packet header fields
+    -- add common packet header fields
     tree:add_le(pf_packet_length, tvb:range(0,2))
     tree:add(pf_message_count, tvb:range(2,1))
     tree:add(pf_feed_type, tvb:range(3,1))
-    tree:add_le(pf_seq, tvb:range(4,4))
 
-    -- add info column text
-    local info = 'Feed \'' .. feed .. "\', " .. "Seq " .. seq .. ", " .. message_count .. " Messages"
+    local suffix = ""
+
+    -- handle heartbeat packets
+    if len == 8 and message_count == 0 then
+        suffix = " (Heartbeat)"
+        tree:add(pf_heartbeat, true):set_generated()
+        tree:add_le(pf_next_seq, tvb:range(4,4))
+    else
+        -- add additional common header fields for non-heartbeats
+        tree:add_le(pf_seq, tvb:range(4,4))
+    end
+
+    -- set info column text
+    local info = "Feed '" .. feed .. "', " ..
+        "Seq " .. seq .. ", " ..
+        message_count .. " Messages" ..
+        suffix
     pinfo.cols.info:set(info)
+    tree:append_text(suffix)
 
     -- add messages subtrees
     local pos = 8
