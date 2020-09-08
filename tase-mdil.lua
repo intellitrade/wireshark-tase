@@ -87,6 +87,7 @@ local pf_seq                = ProtoField.uint32("mdil.sequence_number", "First M
 local pf_last_seq           = ProtoField.uint32("mdil.last_sequence_number", "Last MDIL Sequence Number")
 local pf_next_seq           = ProtoField.uint32("mdil.next_sequence_number", "Next MDIL Sequence Number")
 local pf_heartbeat          = ProtoField.bool("mdil.heartbeat", "Heartbeat Packet")
+local pf_rerequest          = ProtoField.bool("mdil.rerequest", "Recovery Request (Rerequest) Packet")
 
 local pf_message            = ProtoField.bytes("mdil.message", "Message")
 local pf_message_index      = ProtoField.uint16("mdil.message.index", "Index")
@@ -98,7 +99,7 @@ local pf_message_gap_fill   = ProtoField.bool("mdil.message.gap_fill", "Gap Fill
 
 mdil.fields = { 
     pf_packet_length, pf_message_count, pf_feed_type,
-    pf_seq, pf_last_seq, pf_next_seq, pf_heartbeat,
+    pf_seq, pf_last_seq, pf_next_seq, pf_heartbeat, pf_rerequest,
     pf_message, pf_message_index, pf_message_length,
     pf_message_seq, pf_message_feed_seq, pf_message_body, pf_message_gap_fill
 }
@@ -178,6 +179,13 @@ mdil.dissector = function(tvb, pinfo, root)
         -- add additional common header fields for non-heartbeats
         tree:add_le(pf_seq, tvb:range(4,4))
         tree:add(pf_last_seq, seq + message_count - 1):set_generated()
+    end
+
+    -- handle a recovery request (rerequest)
+    if len == 8 and message_count > 0 then
+        suffix = " (Recovery Request)"
+        tree:add(pf_rerequest, true):set_generated()
+        message_count = 0 -- so we don't really try to process messages
     end
 
     -- set info column text
