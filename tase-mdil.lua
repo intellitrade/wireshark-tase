@@ -16,7 +16,7 @@
 --
 
 --
--- This script implements a Wireshark dissector for the Tel Aviv Stock Exchange (TASE) MDIL (UDP) protocol.
+-- This script implements a Wireshark dissector for the Tel-Aviv Stock Exchange (TASE) MDIL (UDP) protocol.
 --
 -- To install this script, place it in the Wireshark personal or global Lua Plugins directory
 -- (see Help -> About Wireshark -> Folders -> Personal/Global Lua Plugins to find the path on your system).
@@ -148,7 +148,7 @@ mdil.dissector = function(tvb, pinfo, root)
     local feed = tvb:range(3,1):string()
     local seq = tvb:range(4,4):le_uint()
 
-    -- validate feed field
+    -- validate feed field (known values are 'R', 'M', 'B' but better be future-proof)
     if feed < 'A' or feed > 'Z' then
         --tree:add_proto_expert_info(ef_message_feed)
         return
@@ -210,7 +210,7 @@ end
 -- define a heuristic dissector, i.e. try to detect if this packet belongs to our protocol
 -- we want to be as strict as possible, so we won't grab a packet that in fact belongs
 -- to a different protocol.
--- For now, we do this by simply attempting a full disect.
+-- For now, we do this by simply attempting a full dissect.
 local function heur_dissect_mdil(tvb, pinfo, root)
     -- delegate to full dissector (if heuristic is enabled)
     local result = settings.heur_enabled and mdil.dissector(tvb, pinfo, root)

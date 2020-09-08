@@ -1,5 +1,5 @@
 # wireshark-tase
-Wireshark dissectors for TASE (Tel Aviv Stock Exchange) protocols
+Wireshark dissectors for TASE (Tel-Aviv Stock Exchange) protocols
 
 # Usage
 To install the scripts, place them in the Wireshark personal or global Lua Plugins directory
@@ -15,4 +15,4 @@ To dissect all packets with a predefined port, set the Ports option in the proto
 preferences. Multiple comma-separated ports can be specified, as well as port ranges.
 
 # License
-This project is provided under the terms of the GPL 3 license.
+This project is licensed under the terms of the GPL 3 license.
