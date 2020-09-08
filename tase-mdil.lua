@@ -184,11 +184,12 @@ mdil.dissector = function(tvb, pinfo, root)
         end
 
         -- add message fields
+        local message_seq = seq + index
         --local message = tree:add(pf_message, tvb:range(pos, 2 + message_length))
-        local message = tree:add("Message #" .. index)
+        local message = tree:add("Message #" .. message_seq)
         --message:add_le(pf_message_index, index):set_generated()
         message:add_le(pf_message_length, tvb:range(pos, 2))
-        message:add_le(pf_message_seq, seq + index):set_generated()
+        message:add_le(pf_message_seq, message_seq):set_generated()
         pos = pos + 2
         if message_length > 0 then
             message:add_le(pf_message_feed_seq, tvb:range(pos, 4))
