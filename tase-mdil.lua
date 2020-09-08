@@ -91,11 +91,12 @@ local pf_message_length     = ProtoField.uint16("mdil.message.length", "Length")
 local pf_message_seq        = ProtoField.uint16("mdil.message.sequence_number", "MDIL Sequence Number")
 local pf_message_feed_seq   = ProtoField.uint16("mdil.message.feed_sequence_number", "Feed Sequence Number")
 local pf_message_body       = ProtoField.string("mdil.message.body", "Payload")
+local pf_message_gap_fill   = ProtoField.bool("mdil.message.gap_fill", "Gap Fill (Empty) Message")
 
 mdil.fields = { 
     pf_packet_length, pf_message_count, pf_feed_type, pf_seq,
     pf_message, pf_message_index, pf_message_length,
-    pf_message_seq, pf_message_feed_seq, pf_message_body
+    pf_message_seq, pf_message_feed_seq, pf_message_body, pf_message_gap_fill
 }
 
 
@@ -194,6 +195,10 @@ mdil.dissector = function(tvb, pinfo, root)
         if message_length > 0 then
             message:add_le(pf_message_feed_seq, tvb:range(pos, 4))
             message:add(pf_message_body, tvb:range(pos + 4, message_length - 4))
+        else
+            -- empty payload means it's a gap fill message
+            message.append_text(" (Gap Fill)")
+            message:add(pf_message_gap_fill, true):set_generated()
         end
         pos = pos + message_length
     end
