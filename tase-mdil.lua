@@ -27,7 +27,7 @@
 -- To apply dissect heuristics, i.e. auto-detect packets that use this protocol,
 -- enable the "Heuristic Detection" option in the protocol preferences.
 --
--- To dissect all packets with a predefined UDP port, set the Ports option in the protocol
+-- To dissect all packets with a predefined port, set the Ports option in the protocol
 -- preferences. Multiple comma-separated ports can be specified, as well as port ranges.
 --
 
@@ -80,29 +80,25 @@ end
 local mdil = Proto("mdil", "MDIL TASE Protocol")
 
 -- define fields
-local pf_packet_length      = ProtoField.uint16("mdil.packet.length", "Packet Length")
-local pf_message_count      = ProtoField.uint8("mdil.message_count", "Message Count")
-local pf_feed_type          = ProtoField.new("Feed Type", "mdil.feed_type", ftypes.CHAR)
-local pf_seq                = ProtoField.uint32("mdil.sequence_number", "First MDIL Sequence Number")
-local pf_last_seq           = ProtoField.uint32("mdil.last_sequence_number", "Last MDIL Sequence Number")
-local pf_next_seq           = ProtoField.uint32("mdil.next_sequence_number", "Next MDIL Sequence Number")
-local pf_heartbeat          = ProtoField.bool("mdil.heartbeat", "Heartbeat Packet")
-local pf_rerequest          = ProtoField.bool("mdil.rerequest", "Recovery Request (Rerequest) Packet")
+local f = {
+    packet_length = ProtoField.uint16("mdil.packet.length", "Packet Length"),
+    message_count = ProtoField.uint8("mdil.message_count", "Message Count"),
+    feed_type = ProtoField.new("Feed Type", "mdil.feed_type", ftypes.CHAR),
+    seq = ProtoField.uint32("mdil.sequence_number", "First MDIL Sequence Number"),
+    last_seq = ProtoField.uint32("mdil.last_sequence_number", "Last MDIL Sequence Number"),
+    next_seq = ProtoField.uint32("mdil.next_sequence_number", "Next MDIL Sequence Number"),
+    heartbeat = ProtoField.bool("mdil.heartbeat", "Heartbeat Packet"),
+    rerequest = ProtoField.bool("mdil.rerequest", "Recovery Request (Rerequest) Packet"),
 
-local pf_message            = ProtoField.bytes("mdil.message", "Message")
-local pf_message_index      = ProtoField.uint16("mdil.message.index", "Index")
-local pf_message_length     = ProtoField.uint16("mdil.message.length", "Length")
-local pf_message_seq        = ProtoField.uint16("mdil.message.sequence_number", "MDIL Sequence Number")
-local pf_message_feed_seq   = ProtoField.uint16("mdil.message.feed_sequence_number", "Feed Sequence Number")
-local pf_message_body       = ProtoField.string("mdil.message.body", "Payload")
-local pf_message_gap_fill   = ProtoField.bool("mdil.message.gap_fill", "Gap Fill (Empty) Message")
-
-mdil.fields = { 
-    pf_packet_length, pf_message_count, pf_feed_type,
-    pf_seq, pf_last_seq, pf_next_seq, pf_heartbeat, pf_rerequest,
-    pf_message, pf_message_index, pf_message_length,
-    pf_message_seq, pf_message_feed_seq, pf_message_body, pf_message_gap_fill
+    message = ProtoField.bytes("mdil.message", "Message"),
+    message_index = ProtoField.uint16("mdil.message.index", "Index"),
+    message_length = ProtoField.uint16("mdil.message.length", "Length"),
+    message_seq = ProtoField.uint16("mdil.message.sequence_number", "MDIL Sequence Number"),
+    message_feed_seq = ProtoField.uint16("mdil.message.feed_sequence_number", "Feed Sequence Number"),
+    message_body = ProtoField.string("mdil.message.body", "Payload"),
+    message_gap_fill = ProtoField.bool("mdil.message.gap_fill", "Gap Fill (Empty) Message")
 }
+mdil.fields = f
 
 
 -- prepare preferences
@@ -164,9 +160,9 @@ mdil.dissector = function(tvb, pinfo, root)
     local tree = root:add(mdil, tvb:range(0, len))
 
     -- add common packet header fields
-    tree:add_le(pf_packet_length, tvb:range(0,2))
-    tree:add(pf_message_count, tvb:range(2,1))
-    tree:add(pf_feed_type, tvb:range(3,1))
+    tree:add_le(f.packet_length, tvb:range(0,2))
+    tree:add(f.message_count, tvb:range(2,1))
+    tree:add(f.feed_type, tvb:range(3,1))
 
     local suffix = ""
     local last_seq = seq + message_count - 1
@@ -174,18 +170,18 @@ mdil.dissector = function(tvb, pinfo, root)
     -- handle heartbeat packets
     if len == 8 and message_count == 0 then
         suffix = " (Heartbeat)"
-        tree:add(pf_heartbeat, true):set_generated()
-        tree:add_le(pf_next_seq, tvb:range(4,4))
+        tree:add(f.heartbeat, true):set_generated()
+        tree:add_le(f.next_seq, tvb:range(4,4))
     else
         -- add additional common header fields for non-heartbeats
-        tree:add_le(pf_seq, tvb:range(4,4))
-        tree:add(pf_last_seq, last_seq):set_generated()
+        tree:add_le(f.seq, tvb:range(4,4))
+        tree:add(f.last_seq, last_seq):set_generated()
     end
 
     -- handle a recovery request (rerequest)
     if len == 8 and message_count > 0 then
         suffix = " (Recovery Request)"
-        tree:add(pf_rerequest, true):set_generated()
+        tree:add(f.rerequest, true):set_generated()
         message_count = 0 -- so we don't really try to process messages
     end
 
@@ -216,19 +212,19 @@ mdil.dissector = function(tvb, pinfo, root)
 
         -- add message fields
         local message_seq = seq + index
-        --local message = tree:add(pf_message, tvb:range(pos, 2 + message_length))
+        --local message = tree:add(f.message, tvb:range(pos, 2 + message_length))
         local message = tree:add("Message #" .. message_seq)
-        --message:add_le(pf_message_index, index):set_generated()
-        message:add_le(pf_message_length, tvb:range(pos, 2))
-        message:add_le(pf_message_seq, message_seq):set_generated()
+        --message:add_le(f.message_index, index):set_generated()
+        message:add_le(f.message_length, tvb:range(pos, 2))
+        message:add_le(f.message_seq, message_seq):set_generated()
         pos = pos + 2
         if message_length > 0 then
-            message:add_le(pf_message_feed_seq, tvb:range(pos, 4))
-            message:add(pf_message_body, tvb:range(pos + 4, message_length - 4))
+            message:add_le(f.message_feed_seq, tvb:range(pos, 4))
+            message:add(f.message_body, tvb:range(pos + 4, message_length - 4))
         else
             -- empty payload means it's a gap fill message
             message.append_text(" (Gap Fill)")
-            message:add(pf_message_gap_fill, true):set_generated()
+            message:add(f.message_gap_fill, true):set_generated()
         end
         pos = pos + message_length
     end

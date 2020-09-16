@@ -87,20 +87,18 @@ local COMPRESSION_FLAG_DESCRIPTION = {
     [3] = "Compressed Latest Updates"
 }
 
-local pf_type               = ProtoField.new("Message Type", "spider.type", ftypes.CHAR)
-local pf_seq                = ProtoField.uint32("spider.sequence_number", "Feed Sequence Number")
-local pf_length             = ProtoField.uint32("spider.length", "Message Length")
-local pf_body               = ProtoField.string("spider.body", "Payload")
-
-local pf_userid             = ProtoField.stringz("spider.login.userid", "User ID")
-local pf_password           = ProtoField.stringz("spider.login.password", "Password")
-local pf_compression_flag   = ProtoField.new("Compression Flag", "spider.login.compression_flag", ftypes.UINT8, COMPRESSION_FLAG_DESCRIPTION)
-local pf_reserved           = ProtoField.new("Reserved", "spider.login.reserved", ftypes.NONE)
-
-spider.fields = {
-    pf_type, pf_seq, pf_length, pf_body,
-    pf_userid, pf_password, pf_compression_flag, pf_reserved
+local f = {
+    type = ProtoField.new("Message Type", "spider.type", ftypes.CHAR),
+    seq = ProtoField.uint32("spider.sequence_number", "Feed Sequence Number"),
+    length = ProtoField.uint32("spider.length", "Message Length"),
+    body = ProtoField.string("spider.body", "Payload"),
+    
+    userid = ProtoField.stringz("spider.login.userid", "User ID"),
+    password = ProtoField.stringz("spider.login.password", "Password"),
+    compression_flag = ProtoField.new("Compression Flag", "spider.login.compression_flag", ftypes.UINT8, COMPRESSION_FLAG_DESCRIPTION),
+    reserved = ProtoField.new("Reserved", "spider.login.reserved", ftypes.NONE)
 }
+spider.fields = f
 
 
 -- prepare preferences
@@ -164,11 +162,11 @@ local function dissect_login_message(tvb, pinfo, root)
     local tree = root:add(spider, tvb:range(0, message_length))
 
     -- add message header fields
-    tree:add(pf_userid, tvb:range(0, 30))
-    tree:add(pf_password, tvb:range(30, 20)) -- we don't decrypt this for security reasons
-    tree:add(pf_seq, tvb:range(50, 4))
-    tree:add(pf_compression_flag, tvb:range(54, 1))
-    tree:add(pf_reserved, tvb:range(55, 40))
+    tree:add(f.userid, tvb:range(0, 30))
+    tree:add(f.password, tvb:range(30, 20)) -- we don't decrypt this for security reasons
+    tree:add(f.seq, tvb:range(50, 4))
+    tree:add(f.compression_flag, tvb:range(54, 1))
+    tree:add(f.reserved, tvb:range(55, 40))
 
     -- set info column text
     local info = "Login User ID '" .. userid ..
@@ -232,10 +230,10 @@ local function dissect_message(tvb, pinfo, root, pos)
     local tree = root:add(spider, tvb:range(0, message_length), "Spider Message #" .. seq)
 
     -- add message header fields
-    tree:add(pf_type, tvb:range(0, 1))
-    tree:add(pf_seq, tvb:range(1, 4))
-    tree:add(pf_length, tvb:range(5, 4))
-    tree:add(pf_body, tvb:range(9, body_length))
+    tree:add(f.type, tvb:range(0, 1))
+    tree:add(f.seq, tvb:range(1, 4))
+    tree:add(f.length, tvb:range(5, 4))
+    tree:add(f.body, tvb:range(9, body_length))
 
     -- set info column text
     local suffix = type == 'E' and " (Error)" or ""
