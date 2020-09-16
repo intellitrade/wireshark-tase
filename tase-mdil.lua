@@ -130,9 +130,6 @@ end
 -- parameters are a Tvb object, a Pinfo object, and a TreeItem object.
 mdil.dissector = function(tvb, pinfo, root)
 
-    -- set the protocol column to show our protocol name
-    pinfo.cols.protocol:set("MDIL")
-
     -- get the packet data length (we can also use tvb:len() or tvb:reported_len() here)
     local len = tvb:reported_length_remaining()
 
@@ -159,6 +156,9 @@ mdil.dissector = function(tvb, pinfo, root)
         --tree:add_proto_expert_info(ef_message_feed)
         return
     end
+
+    -- set the protocol column to show our protocol name
+    pinfo.cols.protocol:set("MDIL")
 
     -- add a subtree encompassing the entire packet data
     local tree = root:add(mdil, tvb:range(0, len))
