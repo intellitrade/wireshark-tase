@@ -169,6 +169,7 @@ mdil.dissector = function(tvb, pinfo, root)
     tree:add(pf_feed_type, tvb:range(3,1))
 
     local suffix = ""
+    local last_seq = seq + message_count - 1
 
     -- handle heartbeat packets
     if len == 8 and message_count == 0 then
@@ -178,7 +179,7 @@ mdil.dissector = function(tvb, pinfo, root)
     else
         -- add additional common header fields for non-heartbeats
         tree:add_le(pf_seq, tvb:range(4,4))
-        tree:add(pf_last_seq, seq + message_count - 1):set_generated()
+        tree:add(pf_last_seq, last_seq):set_generated()
     end
 
     -- handle a recovery request (rerequest)
@@ -189,8 +190,9 @@ mdil.dissector = function(tvb, pinfo, root)
     end
 
     -- set info column text
-    local info = "Feed '" .. feed .. "', " ..
-        "Seq " .. seq .. ", " ..
+    local to_seq = last_seq > seq and ("-" .. last_seq) or ""
+    local info = "Feed '" .. feed ..
+        "', Seq " .. seq .. to_seq .. ", " ..
         message_count .. " Messages" ..
         suffix
     pinfo.cols.info:set(info)
